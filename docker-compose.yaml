@@ -1,0 +1,71 @@
+---
+    version: '3.9'
+    networks:
+      k3d-net:
+        name: k3d-net
+        driver: bridge
+
+
+    services:
+      zookeeper:
+        image: confluentinc/cp-zookeeper:6.1.0
+        hostname: zookeeper
+        container_name: zookeeper
+        networks:
+          - k3d-net
+        ports:
+          - "2181:2181"
+        environment:
+          ZOOKEEPER_CLIENT_PORT: 2181
+          ZOOKEEPER_TICK_TIME: 2000
+    
+      broker:
+        image: confluentinc/cp-kafka:6.1.0
+        hostname: ${KAFKA_HOSTNAME}
+        container_name: broker
+        networks:
+          - k3d-net
+        depends_on:
+          - zookeeper
+        ports:
+          - "9092:9092"
+          - "9093:9093"
+        environment:
+          KAFKA_BROKER_ID: 1
+          KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+          KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: EXTERNAL_LISTENER:PLAINTEXT,INTERNAL_LISTENER:PLAINTEXT, KUBERNETES_LISTENER:PLAINTEXT
+          KAFKA_ADVERTISED_LISTENERS: EXTERNAL_LISTENER://${KAFKA_HOSTNAME}:9092,INTERNAL_LISTENER://localhost:29092, KUBERNETES_LISTENER://kafka-service:9093
+          KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL_LISTENER
+          KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+          KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+
+      # broker2:
+      #   image: confluentinc/cp-kafka:6.1.0
+      #   hostname: ${KAFKA2_HOSTNAME}
+      #   container_name: broker2
+      #   networks:
+      #     - k3d-net
+      #   depends_on:
+      #     - zookeeper
+      #   ports:
+      #     - "9094:9094"
+      #     - "9095:9095"
+      #   environment:
+      #     KAFKA_BROKER_ID: 2
+      #     KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      #     KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: EXTERNAL_LISTENER:PLAINTEXT,INTERNAL_LISTENER:PLAINTEXT, KUBERNETES_LISTENER:PLAINTEXT
+      #     KAFKA_ADVERTISED_LISTENERS: EXTERNAL_LISTENER://${KAFKA2_HOSTNAME}:9094,INTERNAL_LISTENER://localhost:19092, KUBERNETES_LISTENER://kafka-service2:9095
+      #     KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL_LISTENER
+      #     KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      #     KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+
+
+      nginx: 
+        image: nginx:latest
+        container_name: nginx
+        networks:
+          - k3d-net
+        ports:
+          - 80:80
+          - 443:443
+

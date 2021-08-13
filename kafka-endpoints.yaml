@@ -1,0 +1,9 @@
+kind: Endpoints
+apiVersion: v1
+metadata:
+  name: kafka-service
+subsets:
+  - addresses:
+      - ip: ${KAFKA_BROKER_IP}
+    ports:
+      - port: 9093
